@@ -1,4 +1,4 @@
-package com.example.demo.services;
+ package com.example.demo.services;
 
 import java.util.Date;
 import java.util.List;
@@ -7,68 +7,76 @@ import java.util.Optional;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+ 
+ import java.util.Date;
+ import java.util.List;
+ import java.util.Optional;
+ 
+ import javax.transaction.Transactional;
+ 
+ import org.springframework.beans.factory.annotation.Autowired;
+ 
 import com.example.demo.repository.PanierLineRepository;
 import com.example.demo.repository.PanierRepository;
 import com.example.demo.entities.LignePanier;
 import com.example.demo.entities.Panier;
-public class PanierService {
-	 @Autowired
-	 PanierLineRepository commandLineRepository;
+@Service
+ public class PanierService {
 
-	    @Autowired
-	    PanierRepository pRepository;
+    @Autowired
+ PanierLineRepository commandLineRepository;
 
-	    public List<Panier> getAllCommand() {
-	        return pRepository.findAll();
-	    }
+    @Autowired
+   PanierRepository commandRepository;
 
-	    public Panier getCmdById(Long id) {
-	        return pRepository.findById(id)
-					 .orElseThrow(()-> new IllegalArgumentException("Il n'existe pas"));
-	       
-	    }
+    public List<Panier> getAllCommand() {
+        return commandRepository.findAll();
+    }
 
-	    public List<Panier> getCmdByCreationDate(Date creation) {
-	        return pRepository.getPaniersBydateAchat(creation);
-	    }
+    public Panier getCmdById(Long id) {
+        return commandRepository.findById(id).orElseThrow(()-> 
+		new IllegalArgumentException("Il n'existe pas"));
+    }
 
-	    public Panier createCommand(Panier c) {
-	        return pRepository.save(c);
-	    }
+    public List<Panier> getCmdByCreationDate(Date creation) {
+        return commandRepository.getPaniersBydateAchat(creation);
+    }
+    public List<Panier> getUserCommands(Long userId) {
+        return commandRepository.getCommandsByUserId(userId);
+    }
+    public Panier createCommand(Panier c) {
+        return commandRepository.save(c);
+    }
+    public Optional<Panier> getUserActiveCommand(Long userId) {
+        return commandRepository.findCommandByUserIdAndAndFinale(userId, false);
+    }
+    @Transactional
+    public Panier deleteCommand(Long comId) {
+    	Panier c =
+                commandRepository.findById(comId).orElseThrow(()-> 
+        		new IllegalArgumentException("Il n'existe pas"));
+        commandLineRepository.deleteCommandLinesByCommandId(comId);
+        commandRepository.deleteById(comId);
+        return c;
+    }
 
-	    @Transactional
-	    public Panier deleteCommand(Long comId) {
-	        Panier p =
-	                pRepository.findById(comId)
-					 .orElseThrow(()-> new IllegalArgumentException("Il n'existe pas"));
-	        commandLineRepository.deletePanierLinesByPanierId(comId);
-	       pRepository.deleteById(comId);
-	        return p;
-	    }
 
-	    public Optional<Panier> getUserActiveCommand(Long userId) {
-	        return pRepository.findCommandByUserIdAndAndWindedUp(userId, false);
-	    }
+    public double windUpCommand(Long comId) {
+    	Panier c =
+                commandRepository.findById(comId).orElseThrow(()-> 
+        		new IllegalArgumentException("Il n'existe pas"));
+        if (!c.isFinale()) {
+            c.setFinale(true);
+            commandRepository.save(c);
+        }
+        double total = 0;
+        List<LignePanier> commandLines =  commandLineRepository.findCommandLinesByCommandId(comId);
+        for (LignePanier commandLine: commandLines){
+            total +=commandLine.getQuantity()+commandLine.getBook().getPrice();
+        }
+        return total;
+    }
 
-	    public List<Panier> getUserCommands(Long userId) {
-	        return pRepository.getCommandsByUserId(userId);
-	    }
-
-	    public double windUpCommand(Long comId) {
-	        Panier p =
-	                pRepository.findById(comId)
-					 .orElseThrow(()-> new IllegalArgumentException("Il n'existe pas"));
-	        if (!p.isFinale()) {
-	            p.setFinale(true);
-	            pRepository.save(p);
-	        }
-	        double total = 0;
-	        List<LignePanier> commandLines =  commandLineRepository.findCommandLinesByCommandId(comId);
-	        for (LignePanier commandLine: commandLines){
-	            total +=commandLine.getQuantity()+commandLine.getBook().getPrice();
-	        }
-	        return total;
-	    }
 }
-

@@ -7,11 +7,10 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.demo.entities.Panier;
-
 public interface PanierRepository  extends JpaRepository<Panier, Long>{
-	  public List<Panier> getPaniersBydateAchat(Date cmdDate);
+	  public List<Panier> getPaniersBydateAchat(Date dateAchat);
 
-	    public Optional<Panier> findCommandByUserIdAndAndWindedUp(Long userId, boolean windedUp);
+	    public Optional<Panier> findCommandByUserIdAndAndFinale(Long userId, boolean finale);
 
 	    public List<Panier> getCommandsByUserId(Long userId);
 }

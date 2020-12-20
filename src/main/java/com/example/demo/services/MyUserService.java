@@ -1,38 +1,43 @@
 package com.example.demo.services;
+
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
 
-import com.example.demo.SecurityConfig;
 import com.example.demo.entities.MyUserDetails;
+import com.example.demo.entities.Panier;
 import com.example.demo.entities.UserEntity;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.entities.Panier;
-import java.util.List;
-import java.util.Optional;
+import com.example.demo.security.SecuirtyConfig;
 
-public class MyUserDetailsService implements UserDetailsService {
-    PanierService panierSercie;
+@Service
+public class MyUserService implements UserDetailsService {
+
     @Autowired
     UserRepository userRepository;
-  SecurityConfig securityConfig;
+
+    @Autowired
+    SecuirtyConfig securityConfig;
+
+    @Autowired
+    PanierService commandService;
 
     @Override
-    public UserDetails loadUserByUsername(String userName)
-            throws UsernameNotFoundException {
-
-        Optional<UserEntity> user = userRepository.findByUserName(userName);
-
-        user.orElseThrow(() ->
-                new UsernameNotFoundException("User not found:  " + userName));
-
-//        return user.map(MyUserDetails::new).get();
+    public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
+        Optional<UserEntity> user= userRepository.getUserByUserName(userName);
+        user.orElseThrow(()-> new UsernameNotFoundException("No user with the username "+userName));
+        // return user.map(MyUserDetails ::new).get();
         return new MyUserDetails(user.get());
     }
+
     public UserEntity getUserById(Long id) {
-        return userRepository.findById(id)
-				 .orElseThrow(()-> new IllegalArgumentException("Il n'existe pas"));
+        return userRepository.findById(id).orElseThrow(()-> 
+		new IllegalArgumentException("Il n'existe pas"));
     }
 
     public List<UserEntity> getAllUsers(){
@@ -40,7 +45,7 @@ public class MyUserDetailsService implements UserDetailsService {
     }
 
     public UserEntity addUser(UserEntity user) throws Exception {
-        if (userRepository.findByUserName(user.getUserName()).isPresent()) throw new Exception("This " +
+        if (userRepository.getUserByUserName(user.getUserName()).isPresent()) throw new Exception("This " +
                 "username " +
                 "already exist");
         user.setPassword(securityConfig.passwordEncoder().encode(user.getPassword()));
@@ -50,7 +55,7 @@ public class MyUserDetailsService implements UserDetailsService {
     }
 
     public UserEntity addAdmin(UserEntity user) throws Exception {
-        if (userRepository.findByUserName(user.getUserName()).isPresent()) throw new Exception("This username " +
+        if (userRepository.getUserByUserName(user.getUserName()).isPresent()) throw new Exception("This username " +
                 "already exist");
         user.setPassword(securityConfig.passwordEncoder().encode(user.getPassword()));
         user.setRoles("ROLE_ADMIN");
@@ -60,11 +65,11 @@ public class MyUserDetailsService implements UserDetailsService {
 
     public UserEntity deleteUser(Long userId) {
         UserEntity utl=
-                userRepository.findById(userId)
-				 .orElseThrow(()-> new IllegalArgumentException("Il n'existe pas"));
-        List<Panier> c= panierSercie.getUserCommands(userId);
+                userRepository.findById(userId).orElseThrow(()-> 
+        		new IllegalArgumentException("Il n'existe pas"));
+        List<Panier> c= commandService.getUserCommands(userId);
         for (Panier com: c)
-        	panierSercie.deleteCommand(com.getId());
+            commandService.deleteCommand(com.getId());
         userRepository.deleteById(userId);
         return utl;
     }
@@ -74,4 +79,7 @@ public class MyUserDetailsService implements UserDetailsService {
         u.setUserName(user.getUserName());
         return userRepository.save(u);
     }
+
+
 }
+
